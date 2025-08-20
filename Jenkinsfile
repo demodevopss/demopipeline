@@ -5,7 +5,7 @@ pipeline {
     environment {
         APP_NAME = "demopipeline"
         RELEASE = "1.0"
-        DOCKER_USER = "demodevopss"
+        DOCKER_USER = "devopsserdar"
         DOCKER_LOGIN = "dockerhub"
         IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
         IMAGE_TAG = "${RELEASE}.${BUILD_NUMBER}"
@@ -68,7 +68,7 @@ pipeline {
         stage("Trivy Scan") {
             steps {
                 script {
-                    sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image demodevopss/demopipeline:latest --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
+                    sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image devopsserdar/demopipeline:latest --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
                 }
             }
         }
@@ -81,7 +81,7 @@ pipeline {
                             echo "Cleaning up Docker artifacts on Unix..."
                             docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                             docker rmi ${IMAGE_NAME}:latest || true
-                            docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'devops-003-pipeline-aws' || echo "No images found") || true
+                            docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'ddemopipline' || echo "No images found") || true
                             docker container rm -f $(docker container ls -aq) || true
                             docker volume prune -f || true
                         '''
@@ -92,7 +92,7 @@ pipeline {
                             echo Cleaning up Docker artifacts on Windows...
                             docker rmi %IMAGE_NAME%:%IMAGE_TAG% || exit 0
                             docker rmi %IMAGE_NAME%:latest || exit 0
-                            docker rmi %%(docker images --format "{{.Repository}}:{{.Tag}}" ^| findstr "devops-003-pipeline-aws" || echo "No images found") || exit 0
+                            docker rmi %%(docker images --format "{{.Repository}}:{{.Tag}}" ^| findstr "demopipeline" || echo "No images found") || exit 0
                             docker container rm -f %%(docker container ls -aq) || exit 0
                             docker volume prune -f || exit 0
                         '''
