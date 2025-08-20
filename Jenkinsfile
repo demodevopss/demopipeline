@@ -27,8 +27,7 @@ pipeline {
 
         stage('Docker Image') {
            steps {
-               //  sh 'docker build  -t demodevopss/demopipeline:latest  .'
-                  bat 'docker build  -t demodevopss/demopipeline:latest  .'
+               sh 'docker build  -t demodevopss/demopipeline:latest  .'
            }
         }
 
