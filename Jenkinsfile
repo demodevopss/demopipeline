@@ -81,7 +81,7 @@ pipeline {
                             echo "Cleaning up Docker artifacts on Unix..."
                             docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                             docker rmi ${IMAGE_NAME}:latest || true
-                            docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'ddemopipline' || echo "No images found") || true
+                            docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'demopipline' || echo "No images found") || true
                             docker container rm -f $(docker container ls -aq) || true
                             docker volume prune -f || true
                         '''
