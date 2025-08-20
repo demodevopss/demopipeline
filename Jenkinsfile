@@ -11,29 +11,24 @@ pipeline {
 
         stage('Build Maven') {
             steps {
-                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/mimaraslan/devops-002-pipeline']])
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/demodevopss/demopipeline']])
 
-                // sh 'mvn clean install'
-                  bat 'mvn clean install'
+                sh 'mvn clean install'
             }
         }
 
 
         stage('Unit Test') {
             steps {
-                // sh 'mvn test'
-                  bat 'mvn test'
-
-                // sh 'echo Unit Test'
-                // bat 'echo Unit Test'
+                sh 'mvn test'
             }
         }
 
 
         stage('Docker Image') {
            steps {
-               //  sh 'docker build  -t mimaraslan/my-application:latest  .'
-                  bat 'docker build  -t mimaraslan/my-application:latest  .'
+               //  sh 'docker build  -t demodevopss/demopipeline:latest  .'
+                  bat 'docker build  -t demodevopss/demopipeline:latest  .'
            }
         }
 
@@ -43,14 +38,9 @@ pipeline {
                 script{
                     withCredentials([string(credentialsId: 'dockerhub', variable: 'dockerhub')]) {
 
-                        //  sh 'echo docker login -u mimaraslan -p DOCKERHUB_TOKEN'
-                        // bat 'echo docker login -u mimaraslan -p DOCKERHUB_TOKEN'
-
-                        // sh 'echo docker login -u mimaraslan -p ${dockerhub}'
-                          bat 'echo docker login -u mimaraslan -p ${dockerhub}'
-
-                        // sh 'docker image push  mimaraslan/my-application:latest'
-                           bat 'docker image push  mimaraslan/my-application:latest'
+                        //  sh 'echo docker login -u devopsserdar -p DOCKERHUB_TOKEN'
+                         sh 'echo docker login -u devopsserdar -p ${dockerhub}'
+                        // sh 'docker image push  devopsserdar/my-application:latest'
                     }
                 }
             }
@@ -66,11 +56,9 @@ pipeline {
 
        stage('Docker Image to Clean') {
            steps {
-               //   sh 'docker rmi mimaraslan/my-application:latest'
-               //  bat 'docker rmi mimaraslan/my-application:latest'
+               sh 'docker rmi devopsserdar/my-application:latest'
 
-               // sh 'docker image prune -f'
-                bat 'docker image prune -f'
+               sh 'docker image prune -f'
            }
        }
 
