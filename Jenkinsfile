@@ -35,11 +35,16 @@ pipeline {
                 sh 'mvn test'
             }
         }
-/*        stage("SonarQube Analysis") {
+        stage("SonarQube Analysis") {
             steps {
                 script {
                     withSonarQubeEnv(credentialsId: 'sonarqube-token') {
-                        sh "mvn sonar:sonar"
+                        sh """
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=${APP_NAME} \
+                            -Dsonar.projectName=${APP_NAME} \
+                            -Dsonar.projectVersion=${IMAGE_TAG}
+                        """
                     }
                 }
             }
@@ -47,18 +52,21 @@ pipeline {
         stage("Quality Gate") {
             steps {
                 script {
-                    timeout(time: 10, unit: 'MINUTES') { // 10 dakika zaman aşımı
-                        waitForQualityGate abortPipeline: false, credentialsId: 'sonarqube-token'
+                    timeout(time: 10, unit: 'MINUTES') {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            echo "Pipeline unstable due to quality gate failure: ${qg.status}"
+                            // abortPipeline: false means pipeline continues even if quality gate fails
+                        }
                     }
                 }
             }
         }
-*/
         stage('Build & Push Docker Image to DockerHub') {
             steps {
                 script {
                     docker.withRegistry('', DOCKER_LOGIN) {
-                        docker_image = docker.build "${IMAGE_NAME}"
+                        def docker_image = docker.build "${IMAGE_NAME}"
                         docker_image.push("${IMAGE_TAG}")
                         docker_image.push("latest")
                     }
@@ -68,7 +76,7 @@ pipeline {
         stage("Trivy Scan") {
             steps {
                 script {
-                    sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image devopsserdar/demopipeline:latest --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
+                    sh ("docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${IMAGE_NAME}:latest --no-progress --scanners vuln --exit-code 0 --severity HIGH,CRITICAL --format table")
                 }
             }
         }
@@ -81,7 +89,13 @@ pipeline {
                             echo "Cleaning up Docker artifacts on Unix..."
                             docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                             docker rmi ${IMAGE_NAME}:latest || true
-                            docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'demopipline' || echo "No images found") || true
+                            # Clean any remaining images with our app name
+                            REMAINING_IMAGES=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'demopipeline' || true)
+                            if [ ! -z "$REMAINING_IMAGES" ]; then
+                                echo "Removing remaining images: $REMAINING_IMAGES"
+                                docker rmi $REMAINING_IMAGES || true
+                            fi
+                            # Clean containers and volumes
                             docker container rm -f $(docker container ls -aq) || true
                             docker volume prune -f || true
                         '''
@@ -92,7 +106,9 @@ pipeline {
                             echo Cleaning up Docker artifacts on Windows...
                             docker rmi %IMAGE_NAME%:%IMAGE_TAG% || exit 0
                             docker rmi %IMAGE_NAME%:latest || exit 0
-                            docker rmi %%(docker images --format "{{.Repository}}:{{.Tag}}" ^| findstr "demopipeline" || echo "No images found") || exit 0
+                            REM Clean any remaining images with our app name
+                            for /f "tokens=*" %%i in ('docker images --format "{{.Repository}}:{{.Tag}}" ^| findstr "demopipeline" 2^>nul') do docker rmi %%i || exit 0
+                            REM Clean containers and volumes
                             docker container rm -f %%(docker container ls -aq) || exit 0
                             docker volume prune -f || exit 0
                         '''
@@ -102,46 +118,3 @@ pipeline {
         }
     }
 }
-/*
-        stage ('Cleanup Artifacts') {
-            steps {
-                script {
-                    sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG}"
-                    sh "docker rmi ${IMAGE_NAME}:latest"
-                    sh "docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'devops-003-pipeline-aws')"
-                    sh "docker container rm -f $(docker container ls -aq)"
-                    sh "docker volume prune"
-
-
-                    // Agent makinesi zamanla dolacak. Docker şişecek dolacak. Temizlik yapmanız lazım.
-                    // Agent makinede temizlik için yeriniz azalmışsa şu komutları kulanın lütfen.
-                    // Hatta mümkünse bu kodları buraya uyarlayın lütfen.
-                    /*
-                    docker rmi $(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'devops-003-pipeline-aws')
-
-                    docker container rm -f $(docker container ls -aq)
-
-                    docker volume prune
-
-
-                }
-            }
-        }
-
-
-        stage('Deploy Kubernetes') {
-            steps {
-                script {
-                    kubernetesDeploy(configs: 'deploymentservice.yaml', kubeconfigId: 'kubernetes')
-                }
-            }
-        }
-        stage('Docker Image to Clean') {
-            steps {
-                bat 'docker image prune -f'
-            }
-        }
-
-    }
-}
-*/
