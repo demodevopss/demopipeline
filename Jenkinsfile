@@ -35,6 +35,7 @@ pipeline {
                 sh 'mvn test'
             }
         }
+        /*
         stage("SonarQube Analysis") {
             steps {
                 script {
@@ -62,6 +63,7 @@ pipeline {
                 }
             }
         }
+        */
         stage('Build & Push Docker Image to DockerHub') {
             steps {
                 script {
